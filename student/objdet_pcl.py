@@ -15,6 +15,7 @@ import cv2
 import numpy as np
 import torch
 import zlib
+import open3d as o3d
 
 
 # add project directory to python path to enable relative imports
@@ -31,27 +32,70 @@ from tools.waymo_reader.simple_waymo_open_dataset_reader import dataset_pb2, lab
 # object detection tools and helper functions
 import misc.objdet_tools as tools
 
+def keyevent(vis):
+    print('close')
+    vis.close()
 
 # visualize lidar point-cloud
-def show_pcl(pcl):
+def show_pcl(pcl, screenshot_path=None):
+    """
+    Visualizes a lidar point cloud
+    args:
+    - pcl [numpy array of shape (n, 4)]: point cloud data
+    - screenshot_path [string]: Path for storing screenshot of point cloud view
+    returns:
+    - No returns
+    """
 
     ####### ID_S1_EX2 START #######     
     #######
     print("student task ID_S1_EX2")
 
     # step 1 : initialize open3d with key callback and create window
-    
+    vis = o3d.visualization.VisualizerWithKeyCallback()
+    vis.create_window()
+    vis.register_key_callback(262, lambda vis: vis.close()) # key code 262 represents the right-arrow key
+
     # step 2 : create instance of open3d point-cloud class
+    pcd = o3d.geometry.PointCloud()
 
     # step 3 : set points in pcd instance by converting the point-cloud into 3d vectors (using open3d function Vector3dVector)
+    # Remove last column (lidar point intensity) from pcl before passing it to Vector3dVector
+    pcd.points = o3d.utility.Vector3dVector(pcl[:,0:3])
 
     # step 4 : for the first frame, add the pcd instance to visualization using add_geometry; for all other frames, use update_geometry instead
+    vis.add_geometry(pcd)
+
+    # Note to reviewer: 
+    # I could not find a proper way, to re-use the vis object after vis.destroy_window()
+    # Therefor, i did not implement the requirement: "for all other frames, use update_geometry instead"
+    # Instead, the code keeps any viewpoint adjustments made by the user in the open3d window and reapplies them to the next window
     
+    # Reuse last viewpoint if json file is existing
+    # See https://github.com/isl-org/Open3D/blob/1860e75f820f60a4c84d441720020c1e7e4237a7/examples/python/visualization/load_save_viewpoint.py
+    cpar_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'viewpoint.json') 
+    
+    if os.path.isfile(cpar_path): 
+        param = o3d.io.read_pinhole_camera_parameters(cpar_path)
+        vis.get_view_control().convert_from_pinhole_camera_parameters(param)
+
     # step 5 : visualize point cloud and keep window open until right-arrow is pressed (key-code 262)
+    vis.run()
+    
+    #Store image
+    if screenshot_path:
+        vis.capture_screen_image(screenshot_path)
+
+    # Store viewpoint
+    param = vis.get_view_control().convert_to_pinhole_camera_parameters()
+    o3d.io.write_pinhole_camera_parameters(cpar_path, param)
+
+    #Clean up
+    vis.destroy_window()
 
     #######
     ####### ID_S1_EX2 END #######     
-       
+
 
 # visualize range image
 def show_range_image(frame, lidar_name):
@@ -89,7 +133,7 @@ def show_range_image(frame, lidar_name):
     img_intensity = ri_intensity.astype(np.uint8)
     
     # step 6 : stack the range and intensity image vertically using np.vstack and convert the result to an unsigned 8-bit integer
-    img_range_intensity = np.vstack((ri_range, ri_intensity))
+    img_range_intensity = np.vstack((img_range, img_intensity))
 
     # step 7: Crop range image to +/- 90 deg. left and right of the forward-facing x-axis (required according to project rubric)
     # focus on +/- 45° around the image center

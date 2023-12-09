@@ -50,16 +50,17 @@ import misc.params as params
 ## Set parameters and perform initializations
 
 ## Select Waymo Open Dataset file and frame numbers
-data_filename = 'training_segment-1005081002024129653_5313_150_5333_150_with_camera_labels.tfrecord' # Sequence 1
+#data_filename = 'training_segment-1005081002024129653_5313_150_5333_150_with_camera_labels.tfrecord' # Sequence 1
 # data_filename = 'training_segment-10072231702153043603_5725_000_5745_000_with_camera_labels.tfrecord' # Sequence 2
-# data_filename = 'training_segment-10963653239323173269_1924_000_1944_000_with_camera_labels.tfrecord' # Sequence 3
-show_only_frames = [0, 1] # show only frames in interval for debugging
+data_filename = 'training_segment-10963653239323173269_1924_000_1944_000_with_camera_labels.tfrecord' # Sequence 3
+show_only_frames = [0, 200] # show only frames in interval for debugging
 
 ## Prepare Waymo Open Dataset file for loading
 data_fullpath = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'dataset', data_filename) # adjustable path in case this script is called from another working directory
 results_fullpath = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'results')
 datafile = WaymoDataFileReader(data_fullpath)
 datafile_iter = iter(datafile)  # initialize dataset iterator
+
 
 ## Initialize object detection
 configs_det = det.load_configs(model_name='darknet') # options are 'darknet', 'fpn_resnet'
@@ -84,7 +85,6 @@ exec_tracking = [] # options are 'perform_tracking'
 exec_visualization = ['show_range_image'] # options are 'show_range_image', 'show_bev', 'show_pcl', 'show_labels_in_image', 'show_objects_and_labels_in_bev', 'show_objects_in_bev_labels_in_camera', 'show_tracks', 'show_detection_performance', 'make_tracking_movie'
 exec_list = make_exec_list(exec_detection, exec_tracking, exec_visualization)
 vis_pause_time = 0 # set pause time between frames in ms (0 = stop between frames until key is pressed)
-
 
 ##################
 ## Perform detection & tracking over all selected frames
@@ -184,7 +184,38 @@ while True:
             cv2.waitKey(vis_pause_time)
 
         if 'show_pcl' in exec_list:
-            pcl.show_pcl(lidar_pcl)
+            #Get lidar range image
+            img_range = pcl.show_range_image(frame, lidar_name)
+            img_range = img_range.astype(np.uint8)
+            
+            # resize image
+            dim = (1920, 371)
+            img_range = cv2.resize(img_range, dim, interpolation = cv2.INTER_AREA)
+
+            img_range = cv2.cvtColor(img_range,cv2.COLOR_GRAY2RGB)
+
+            #Extract image from front camera and store as reference when viewing the pcl data
+            img_front = tools.extract_front_camera_image(frame)
+            print(img_front.shape)
+
+            image_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'img', f'pcl{cnt_frame}.png') 
+            #cv2.imshow('range_image', img_range)
+            #cv2.waitKey(0)
+
+            #cv2.imwrite( image)
+            pcl.show_pcl(lidar_pcl, screenshot_path=image_path)
+
+            img_pcl = cv2.imread(image_path)
+            print(img_pcl.shape)
+
+            v_img = cv2.vconcat([img_pcl, img_range, img_front])
+            cv2.imwrite(image_path, v_img)
+            #h_img = cv2.hconcat([img1, img2])
+
+            #cv2.imshow('Horizontal', h_img)
+            #cv2.imshow('Vertical', v_img)
+            #cv2.waitKey(0)
+            #cv2.destroyAllWindows()
 
         if 'show_bev' in exec_list:
             tools.show_bev(lidar_bev, configs_det)  
