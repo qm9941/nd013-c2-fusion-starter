@@ -173,7 +173,7 @@ def bev_from_pcl(lidar_pcl, configs):
     lidar_pcl_cpy[:,1] = np.int_(np.floor((lidar_pcl_cpy[:,1] - configs.lim_y[0]) / bev_discret))
 
     # step 4 : visualize point-cloud using the function show_pcl from a previous task
-    if True:
+    if False:
         show_pcl(lidar_pcl_cpy, 'ID_S2_EX1.png')
 
     #######

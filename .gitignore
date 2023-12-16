@@ -1,5 +1,6 @@
 results/
 results_darknet/
+results_fpn/
 img/
 dataset
 tools/

@@ -109,10 +109,9 @@ def load_configs_model(model_name='darknet', configs=None):
         configs.num_input_features = 4
 
         configs.root_dir = '../'
-        #configs.dataset_dir = os.path.join(configs.root_dir, 'dataset', 'kitti')
 
-    if configs.save_test_output:
-        configs.results_dir = os.path.join(configs.root_dir, 'results', configs.saved_fn)
+        if configs.save_test_output:
+            configs.results_dir = os.path.join(configs.root_dir, 'results', configs.saved_fn)
 
 
         #######
@@ -239,7 +238,7 @@ def detect_objects(input_bev_maps, model, configs):
                                 outputs['dim'], K=configs.K)
             detections = detections.cpu().numpy().astype(np.float32)
             detections = post_processing(detections, configs)
-            detections = detections[0]  # only first batch
+            detections = detections[0][1]  # only first batch and only object type vehicle are passed on, class id for vehicles is 1
 
             #######
             ####### ID_S3_EX1-5 END #######     
@@ -260,9 +259,9 @@ def detect_objects(input_bev_maps, model, configs):
 
 
     ## step 1 : check whether there are any detections for object type vehicle, class id for vehicles is 1
-    if len(detections[1]) > 0:
+    if len(detections) > 0:
         ## step 2 : loop over all detections
-        for det in detections[1]:
+        for det in detections:
             ## step 3 : perform the conversion using the limits for x, y and z set in the configs structure
             # The transformation represents the inverse of transformation done in objdet_tools.project_detections_into_bev
             _score, _x, _y, _z, _h, _w, _l, _yaw = det
