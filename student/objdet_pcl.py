@@ -137,7 +137,6 @@ def show_range_image(frame, lidar_name):
     ri_center = int(img_range_intensity.shape[1]/2)
     img_range_intensity = img_range_intensity[:,ri_center-deg45:ri_center+deg45]
 
-
     #######
     ####### ID_S1_EX1 END #######     
     
