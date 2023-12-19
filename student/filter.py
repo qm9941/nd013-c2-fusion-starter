@@ -28,10 +28,16 @@ class Filter:
 
     def F(self):
         ############
-        # TODO Step 1: implement and return system matrix F
-        ############
-
-        return 0
+        dt = params.dt
+        #State transition matrix, position x,y,z and velocity x, y, z. Constant velocity model.
+        #Note:
+        #Although it is an EKF, the state transition matrix is linear and therefore f and Fj are not needed
+        return np.matrix([[1, 0, 0, dt,  0,  0],
+                          [0, 1, 0,  0, dt,  0],
+                          [0, 0, 1,  0,  0, dt],
+                          [0, 0, 0,  1,  0,  0],
+                          [0, 0, 0,  0,  1,  0],
+                          [0, 0, 0,  0,  0,  1]])
         
         ############
         # END student code
@@ -39,21 +45,35 @@ class Filter:
 
     def Q(self):
         ############
-        # TODO Step 1: implement and return process noise covariance Q
-        ############
+        # Process noise covariance Q, it is assumed that position prediction is correct, 
+        # but velocity prediction has uncertainty due to constant velocity model
+        q = params.q
+        dt = params.dt
+        q1 = ((dt**3)/3) * q 
+        q2 = ((dt**2)/2) * q 
+        q3 = dt * q 
+        return np.matrix([[q1, 0,  0, q2,  0,  0],
+                          [0, q1,  0,  0, q2,  0],
+                          [0,  0, q1,  0,  0, q2],
+                          [q2, 0,  0, q3,  0,  0],
+                          [ 0, q2, 0,  0, q3,  0],
+                          [ 0,  0, q2, 0,  0, q3]])
 
-        return 0
-        
         ############
         # END student code
         ############ 
 
     def predict(self, track):
         ############
-        # TODO Step 1: predict state x and estimation error covariance P to next timestep, save x and P in track
-        ############
+        # predict state and estimation error covariance to next timestep
+        # It is an EKF but state transistion matrix is linear, so f(x) and Fj are not needed
+        F = self.F()
+        x = F * track.x # state prediction
+        P = F * track.P * F.transpose() + self.Q() # covariance prediction
 
-        pass
+        #save x and P in track
+        track.set_x(x)
+        track.set_P(P)
         
         ############
         # END student code
@@ -61,9 +81,21 @@ class Filter:
 
     def update(self, track, meas):
         ############
-        # TODO Step 1: update state x and covariance P with associated measurement, save x and P in track
-        ############
-        
+        # update state x and covariance P with associated measurement
+        # It is an EKF because measurment function may be non-linear for some sensor, so h(x) and Hj are needed
+        x = track.x # get current state
+        Hj = meas.sensor.get_H(x) # measurement matrix (Jacobian at current state)
+        P = track.P # Uncertainty covariance
+        S_l = self.S(track, meas, Hj) # covariance of residual
+        K = P * Hj.transpose() * np.linalg.inv(S_l) # Kalman gain
+        x = x + K * self.gamma(track, meas) # state update
+        I = np.identity(x.shape[0])
+        P = (I - K * Hj) * P # covariance update
+
+        #save x and P in track
+        track.set_x(x)
+        track.set_P(P)
+
         ############
         # END student code
         ############ 
@@ -71,10 +103,10 @@ class Filter:
     
     def gamma(self, track, meas):
         ############
-        # TODO Step 1: calculate and return residual gamma
-        ############
-
-        return 0
+        # calculate and return residual gamma
+        # It is an EKF because measurment function may be non-linear for some sensor, so h(x) and Hj are needed
+        x = track.x # get current state
+        return meas.z - meas.sensor.get_hx(x) # residual at current state
         
         ############
         # END student code
@@ -82,10 +114,8 @@ class Filter:
 
     def S(self, track, meas, H):
         ############
-        # TODO Step 1: calculate and return covariance of residual S
-        ############
-
-        return 0
+        # calculate and return covariance of residual S
+        return H * track.P * H.transpose() + meas.R # covariance of residual
         
         ############
         # END student code
