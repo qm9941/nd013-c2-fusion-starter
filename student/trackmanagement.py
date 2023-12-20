@@ -114,18 +114,23 @@ class Trackmanagement:
                     #decrease track score if track is visible
                     track.score -= 1./params.window
         
-            # delete old tracks         
+        # delete old tracks
+        tracks_to_delete = [] # keep a list of tracks to delete, as delete_track operates on track_list
+        for track in self.track_list:
             # delete track if covariance of px or py bigger than threshold
             if (track.P[0, 0] > params.max_P) or (track.P[1, 1] > params.max_P):
-                self.delete_track(track)
+                tracks_to_delete.append(track)
             elif (track.state == 'confirmed'):
                 if (track.score <= params.delete_threshold):
                     #Track is confirmed and score is below the delete threshold -> delete the track
-                    self.delete_track(track)
+                    tracks_to_delete.append(track)
             else:
                 if track.score <= 0:
                     #Track is not confirmed and score is zero -> delete the track
-                    self.delete_track(track)
+                    tracks_to_delete.append(track)
+        
+        for track in tracks_to_delete:
+            self.delete_track(track)
 
         ############
         # END student code
