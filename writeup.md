@@ -34,7 +34,13 @@ The RMSE plot shows reasonable results.
 ## Apply sensor fusion to track objects using camera and lidar measurement data
 The last step ws about implementing a nonlinear camera measurement model. With the first try, I did not take the extrinsic camera transformation (vehicle to camera) into account, the function h(x) did just implement the intrinsic transformation (image to camera). This led to a poor tracking performance as the resulting Mahalanobis distances for camera measurement were very high and did not pass the gate. After fixing this issue, the performance where quite amazing (at least for me).
 ![Resulting RMSE of step 4](img/Step4_RMSE.png)
-[Video of tracking multiple objects using camera and lidar measurement data](img/my_tracking_results.avi)
+<br>
+Video of tracking multiple objects using camera and lidar measurement data
+
+
+https://github.com/qm9941/nd013-c2-fusion-starter/assets/151669368/74a626d3-7d2a-43dc-8d9d-41e11ee2b343
+
+
 
 
 ## Benefits in Camera-Lidar Fusion tracking over Lidar-only tracking
